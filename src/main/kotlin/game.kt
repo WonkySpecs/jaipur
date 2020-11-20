@@ -101,11 +101,26 @@ data class Game(
 
     constructor(p1: Player, p2: Player, market: MutableList<Card>, deck: Deque<Card>)
             : this(p1, p2, 0, market, deck, newGoodsStacks(), newSetBonusStacks()) {
-        p1View = PlayerGameView(p1.hand, p1.herd, p2.herd, market)
-        p2View = PlayerGameView(p2.hand, p2.herd, p1.herd, market)
+        p1View = PlayerGameView(p1.hand.toMutableList(), p1.herd, p2.herd, market.toList(), goodsTokens.toMap())
+        p2View = PlayerGameView(p2.hand.toMutableList(), p2.herd, p1.herd, market.toList(), goodsTokens.toMap())
     }
 
-    fun isOver() = failedToRefill || setTokens.count { it.value.isEmpty() } >= 3
+    fun isOver(): Boolean {
+        return when {
+            failedToRefill -> {
+                println("Game over, deck exhausted")
+                true
+            }
+            setTokens.count { it.value.isEmpty() } >= 3 -> {
+                println("Game over, 3 stacks exhausted")
+                true
+            }
+            else -> {
+                false
+            }
+        }
+    }
+
     private fun cur() = if (playerTurn == 0) {
         p1
     } else {
@@ -114,11 +129,12 @@ data class Game(
 
     fun isValid(action: Action): Boolean {
         return when (action.type) {
-            ActionType.TAKE_CAMELS -> market.count { it == Card.CAMEL } > 0
+            ActionType.TAKE_CAMELS -> market.any { it == Card.CAMEL }
             ActionType.TAKE_SINGLE -> {
                 action.cardsFromMarket.size == 1
                         && market.count { it == action.cardsFromMarket[0] } > 0
                         && cur().hand.size < MAX_HAND_SIZE
+                        && action.cardsFromMarket[0] != Card.CAMEL
             }
             ActionType.SELL -> canSell(action.cardsFromHand, cur().hand)
             ActionType.TAKE_SWAP -> {
@@ -126,7 +142,7 @@ data class Game(
 
                 return when {
                     action.cardsFromHand.size != action.cardsFromMarket.size
-                            || action.cardsFromHand.isEmpty()
+                            || action.cardsFromHand.size < 2
                             || action.cardsFromMarket.any { it == Card.CAMEL }
                             || camelsPlaced > cur().herd
                             || action.cardsFromHand.any { fromHand -> action.cardsFromMarket.any { it == fromHand } }
@@ -246,8 +262,8 @@ data class Game(
     }
 
     fun printState() {
-        println("P1: ${p1.hand}, ${p1.herd} camels")
-        println("P2: ${p2.hand}, ${p2.herd} camels")
+        println("P1: ${p1.hand}, ${p1.herd} camels, ${p1.score} points")
+        println("P2: ${p2.hand}, ${p2.herd} camels, ${p2.score} points")
         println("Market: $market")
     }
 }
