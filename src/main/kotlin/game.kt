@@ -1,97 +1,15 @@
+import bots.BigSpender
+import bots.CamelLover
 import bots.RandomBot
 import java.util.*
 
 fun main() {
-    val game = initGame()
-    val player1 = RandomBot()
-    val player2 = RandomBot()
-
-    fun getAction(game: Game): Action {
-        return if (game.playerTurn == 0) {
-            player1.getAction(game.p1View) { a -> game.isValid(a) }
-        } else {
-            player2.getAction(game.p2View) { a -> game.isValid(a) }
-        }
-    }
-
-    while (!game.isOver()) {
-        var action = getAction(game)
-        while (!game.isValid(action)) {
-            action = getAction(game)
-        }
-        game.printState()
-        println("P${game.playerTurn + 1} executing: $action")
-        game.execute(action)
-    }
-    game.awardCamelToken()
-    val message = when {
-        game.p1.score == game.p2.score -> "Draw!"
-        game.p1.score > game.p2.score -> "Player 1 wins!"
-        else -> "Player 2 wins!"
-    }
-    println("$message ${game.p1.score} - ${game.p2.score}")
-}
-
-fun initGame(): Game {
-    val p1 = Player()
-    val p2 = Player()
-    val deck = newDeck();
-    val market = mutableListOf(Card.CAMEL, Card.CAMEL, Card.CAMEL)
-    market.add(deck.pop())
-    market.add(deck.pop())
-    dealHand(deck, p1)
-    dealHand(deck, p2)
-    return Game(p1, p2, market, deck)
-}
-
-fun dealHand(deck: Deque<Card>, player: Player) {
-    repeat(5) {
-        val card = deck.pop()
-        if (card == Card.CAMEL) {
-            player.herd++
-        } else {
-            player.hand.add(card)
-        }
-    }
+    val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover()))
+    tournament.run()
 }
 
 enum class Card {
     RUBY, GOLD, SILVER, SILK, SPICE, LEATHER, CAMEL
-}
-
-fun newGoodsStacks(): Map<Card, Deque<Int>> {
-    return hashMapOf<Card, Deque<Int>>(
-        Card.RUBY to ArrayDeque(listOf(7, 7, 5, 5, 5)),
-        Card.GOLD to ArrayDeque(listOf(6, 6, 5, 5, 5)),
-        Card.SILVER to ArrayDeque(listOf(5, 5, 5, 5, 5)),
-        Card.SILK to ArrayDeque(listOf(5, 3, 3, 2, 2, 1, 1)),
-        Card.SPICE to ArrayDeque(listOf(5, 3, 3, 2, 2, 1, 1)),
-        Card.LEATHER to ArrayDeque(listOf(4, 3, 2, 1, 1, 1, 1, 1, 1)),
-    )
-}
-
-fun newSetBonusStacks(): Map<Int, Deque<Int>> {
-    return hashMapOf<Int, Deque<Int>>(
-        3 to ArrayDeque(listOf(1, 1, 2, 2, 2, 3, 3).shuffled()),
-        4 to ArrayDeque(listOf(4, 4, 5, 5, 6, 6).shuffled()),
-        5 to ArrayDeque(listOf(8, 8, 9, 10, 10).shuffled()),
-    )
-}
-
-fun newDeck(): Deque<Card> {
-    return ArrayDeque(
-        hashMapOf(
-            Card.RUBY to 6,
-            Card.GOLD to 6,
-            Card.SILVER to 6,
-            Card.SILK to 8,
-            Card.SPICE to 8,
-            Card.LEATHER to 10,
-            Card.CAMEL to 8
-        ).flatMap {
-            generateSequence { it.key }.take(it.value).toMutableList()
-        }.shuffled()
-    )
 }
 
 data class Player(val hand: MutableList<Card>, var herd: Int, var score: Int) {
@@ -113,18 +31,16 @@ data class Game(
 
     constructor(p1: Player, p2: Player, market: MutableList<Card>, deck: Deque<Card>)
             : this(p1, p2, 0, market, deck, newGoodsStacks(), newSetBonusStacks()) {
-        p1View = PlayerGameView(p1.hand.toMutableList(), p1.herd, p2.herd, market.toList(), goodsTokens.toMap())
-        p2View = PlayerGameView(p2.hand.toMutableList(), p2.herd, p1.herd, market.toList(), goodsTokens.toMap())
+        p1View = PlayerGameView(p1.hand.toMutableList(), p1.herd, p2.herd, market.toList(), goodsTokens)
+        p2View = PlayerGameView(p2.hand.toMutableList(), p2.herd, p1.herd, market.toList(), goodsTokens)
     }
 
     fun isOver(): Boolean {
         return when {
             failedToRefill -> {
-                println("Game over, deck exhausted")
                 true
             }
             setTokens.count { it.value.isEmpty() } >= 3 -> {
-                println("Game over, 3 stacks exhausted")
                 true
             }
             else -> {
@@ -205,8 +121,11 @@ data class Game(
         when (num) {
             3, 4, 5 -> cur().score += setTokens[num]?.pop()!! // Assume set bonus stacks don't run out
         }
+
         while (num > 0 && tokensForGood.isNotEmpty()) {
             cur().score += tokensForGood.pop()
+            p1View.goodsTokens[type]!!.pop()
+            p2View.goodsTokens[type]!!.pop()
             num--
         }
         for (c in cards) {
@@ -294,6 +213,7 @@ data class Action(
         fun sell(cards: List<Card>) = Action(ActionType.SELL, cards, emptyList())
         fun take(card: Card) = Action(ActionType.TAKE_SINGLE, emptyList(), listOf(card))
         fun swap(hand: List<Card>, market: List<Card>) = Action(ActionType.TAKE_SWAP, hand, market)
+        fun invalid() = Action(ActionType.TAKE_SINGLE, emptyList(), listOf(Card.CAMEL))
     }
 }
 

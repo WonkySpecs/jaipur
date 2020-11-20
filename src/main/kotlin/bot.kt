@@ -24,6 +24,8 @@ data class PlayerGameView(
         MutableList(5 - opponentHerd) { null },
         opponentHerd,
         market as MutableList<Card>,
-        initialStacks
+        initialStacks.entries
+            .map { Pair(it.key, ArrayDeque(ArrayList(it.value))) }
+            .toMap()
     )
 }
