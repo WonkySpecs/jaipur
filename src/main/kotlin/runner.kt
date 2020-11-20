@@ -98,4 +98,3 @@ fun newDeck(): Deque<Card> {
         }.shuffled()
     )
 }
-
