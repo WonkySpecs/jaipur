@@ -1,7 +1,19 @@
+import bots.RandomBot
 import java.util.*
 
 fun main() {
     val game = initGame()
+    val player1 = RandomBot()
+    val player2 = RandomBot()
+
+    fun getAction(game: Game): Action {
+        return if (game.playerTurn == 0) {
+            player1.getAction(game.p1View) { a -> game.isValid(a) }
+        } else {
+            player2.getAction(game.p2View) { a -> game.isValid(a) }
+        }
+    }
+
     while (!game.isOver()) {
         var action = getAction(game)
         while (!game.isValid(action)) {
@@ -283,15 +295,6 @@ data class Action(
         fun take(card: Card) = Action(ActionType.TAKE_SINGLE, emptyList(), listOf(card))
         fun swap(hand: List<Card>, market: List<Card>) = Action(ActionType.TAKE_SWAP, hand, market)
     }
-}
-
-fun getAction(game: Game): Action {
-    val view = if (game.playerTurn == 0) {
-        game.p1View
-    } else {
-        game.p2View
-    }
-    return somethingRandom(view)
 }
 
 const val MAX_HAND_SIZE: Int = 7

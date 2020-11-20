@@ -1,5 +1,8 @@
 import java.util.*
-import kotlin.random.Random
+
+interface Bot {
+    fun getAction(view: PlayerGameView, validChecker: (a: Action) -> Boolean): Action
+}
 
 data class PlayerGameView(
     val hand: MutableList<Card>,
@@ -23,18 +26,4 @@ data class PlayerGameView(
         market as MutableList<Card>,
         initialStacks
     )
-}
-
-fun somethingRandom(view: PlayerGameView): Action {
-    return when (Random.nextInt(4)) {
-        0 -> Action.takeCamels()
-        1 -> Action.sell(
-            view.hand.filter { Random.nextBoolean() }
-        )
-        2 -> Action.take(view.market.random())
-        else -> Action.swap(
-            view.hand.filter { Random.nextBoolean() },
-            view.market.filter { Random.nextBoolean() },
-        )
-    }
 }
