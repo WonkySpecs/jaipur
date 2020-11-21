@@ -47,7 +47,7 @@ data class Game(
         }
     }
 
-    private fun cur() = if (playerTurn == 0) {
+    fun curPlayer() = if (playerTurn == 0) {
         p1
     } else {
         p2
@@ -59,10 +59,10 @@ data class Game(
             ActionType.TAKE_SINGLE -> {
                 action.cardsFromMarket.size == 1
                         && market.count { it == action.cardsFromMarket[0] } > 0
-                        && cur().hand.size < MAX_HAND_SIZE
+                        && curPlayer().hand.size < MAX_HAND_SIZE
                         && action.cardsFromMarket[0] != Card.CAMEL
             }
-            ActionType.SELL -> canSell(action.cardsFromHand, cur().hand)
+            ActionType.SELL -> canSell(action.cardsFromHand, curPlayer().hand)
             ActionType.TAKE_SWAP -> {
                 val camelsPlaced = action.cardsFromHand.count { it == Card.CAMEL }
 
@@ -70,9 +70,9 @@ data class Game(
                     action.cardsFromHand.size != action.cardsFromMarket.size
                             || action.cardsFromHand.size < 2
                             || action.cardsFromMarket.any { it == Card.CAMEL }
-                            || camelsPlaced > cur().herd
+                            || camelsPlaced > curPlayer().herd
                             || action.cardsFromHand.any { fromHand -> action.cardsFromMarket.any { it == fromHand } }
-                            || cur().hand.size + camelsPlaced > MAX_HAND_SIZE
+                            || curPlayer().hand.size + camelsPlaced > MAX_HAND_SIZE
                     -> false
                     else -> true
                 }
@@ -93,7 +93,7 @@ data class Game(
 
     private fun takeCamels() {
         val num = market.count { it == Card.CAMEL }
-        cur().herd += num
+        curPlayer().herd += num
         market = market.filter { it != Card.CAMEL } as MutableList<Card>
         if (deck.size < num) {
             failedToRefill = true
@@ -117,11 +117,11 @@ data class Game(
         val tokensForGood = goodsTokens[type] ?: error("Card type '$type' not in goodsTokens")
         var num = cards.size
         when (num) {
-            3, 4, 5 -> cur().score += setTokens[num]?.pop()!! // Assume set bonus stacks don't run out
+            3, 4, 5 -> curPlayer().score += setTokens[num]?.pop()!! // Assume set bonus stacks don't run out
         }
 
         while (num > 0 && tokensForGood.isNotEmpty()) {
-            cur().score += tokensForGood.pop()
+            curPlayer().score += tokensForGood.pop()
             p1View.goodsTokens[type]!!.pop()
             p2View.goodsTokens[type]!!.pop()
             num--
@@ -144,7 +144,7 @@ data class Game(
     }
 
     private fun addToHand(card: Card) {
-        cur().hand.add(card)
+        curPlayer().hand.add(card)
         if (playerTurn == 0) {
             p1View.hand.add(card)
             p2View.opponentHand.add(card)
@@ -155,7 +155,7 @@ data class Game(
     }
 
     private fun removeFromHand(card: Card) {
-        cur().hand.remove(card)
+        curPlayer().hand.remove(card)
         if (playerTurn == 0) {
             p1View.hand.remove(card)
             if (card in p2View.opponentHand) {

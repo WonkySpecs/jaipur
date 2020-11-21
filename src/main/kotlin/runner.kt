@@ -32,6 +32,8 @@ fun runGame(p1: Bot, p2: Bot): GameResult {
     while (!game.isOver()) {
         var action = getAction(game)
         while (!game.isValid(action)) {
+            println("Warning: bot tried to do invalid action: $action\n" +
+                    "Market: ${game.market}, hand: ${game.curPlayer().hand}, ${game.curPlayer().herd} camels")
             action = getAction(game)
         }
         game.execute(action)
