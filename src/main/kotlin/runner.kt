@@ -1,7 +1,7 @@
 import java.util.*
 
 class Tournament(private val participants: List<Bot>) {
-    private val ITERATIONS = 50
+    private val ITERATIONS = 100
 
     fun run() {
         for (i in participants.indices) {

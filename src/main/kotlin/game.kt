@@ -1,10 +1,8 @@
-import bots.BigSpender
-import bots.CamelLover
-import bots.RandomBot
+import bots.*
 import java.util.*
 
 fun main() {
-    val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover()))
+    val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover(), BasicBot()))
     tournament.run()
 }
 
