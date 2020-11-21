@@ -16,6 +16,10 @@ open class AlgoBot(private vararg val steps: (v: PlayerGameView) -> Action?) : B
             .firstOrNull { validChecker.invoke(it) } ?: generateSequence { somethingRandom(view) }
             .first { validChecker.invoke(it) }
     }
+
+    override fun description(): String {
+        return javaClass.toString()
+    }
 }
 
 fun somethingRandom(view: PlayerGameView): Action {
@@ -40,11 +44,15 @@ class CamelLover : AlgoBot({ Action.takeCamels() })
 // Always tries to sell the highest value good in hand
 class BigSpender : AlgoBot({ v -> sellBestIfAtLeast(v, 0) })
 
-class BasicBot : AlgoBot(
-    { v -> sellBestIfAtLeast(v, 4) },
-    { v -> takeSingleIfAtLeast(v, 2) },
+class BasicBot(private val sellThreshold: Int, private val takeThreshold: Int) : AlgoBot(
+    { v -> sellBestIfAtLeast(v, sellThreshold) },
+    { v -> takeSingleIfAtLeast(v, takeThreshold) },
     { v -> takeCamelsIfAtLeast(v.market, min(v.herd - v.opponentHerd, 4)) },
-)
+) {
+    override fun description(): String {
+        return "Basic bot [$sellThreshold, $takeThreshold]"
+    }
+}
 
 fun sellBestIfAtLeast(view: PlayerGameView, min: Int): Action? {
     val toSell = biggestSeller(view)

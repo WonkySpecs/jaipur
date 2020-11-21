@@ -2,8 +2,13 @@ import bots.*
 import java.util.*
 
 fun main() {
-    val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover(), BasicBot()))
-    tournament.run()
+    // val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover(), BasicBot()))
+    val bots = (1..7)
+        .flatMap { sellThresh -> (3..6).map { takeThresh -> Pair(sellThresh, takeThresh) } }
+        .map { BasicBot(it.first, it.second) }
+    val bbTournament = Tournament(bots, 100)
+    bbTournament.run()
+    bbTournament.printWinners(10)
 }
 
 enum class Card {

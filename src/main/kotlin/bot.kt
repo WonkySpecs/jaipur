@@ -2,6 +2,7 @@ import java.util.*
 
 interface Bot {
     fun getAction(view: PlayerGameView, validChecker: (a: Action) -> Boolean): Action
+    fun description(): String
 }
 
 data class PlayerGameView(

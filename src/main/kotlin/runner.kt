@@ -1,24 +1,44 @@
 import java.util.*
 
-class Tournament(private val participants: List<Bot>) {
-    private val ITERATIONS = 100
+class Tournament(private val participants: List<Bot>, private val gamesPerMatch: Int) {
+    private val results: MutableMap<Bot, MutableList<GameResult>> = mutableMapOf()
 
     fun run() {
         for (i in participants.indices) {
             for (j in (i + 1) until participants.size) {
-                val results = IntRange(1, ITERATIONS)
-                    .map { runGame(participants[i], participants[j]) }
-                val p1Wins = results.count { it.p1Score > it.p2Score }
-                val p2Wins = results.count { it.p1Score < it.p2Score }
-                println("${participants[i].javaClass} $p1Wins - $p2Wins ${participants[j].javaClass} (${ITERATIONS - p1Wins - p2Wins} draws)")
+                val p1 = participants[i]
+                val p2 = participants[j]
+                val matchResults = IntRange(1, gamesPerMatch)
+                    .map { runGame(p1, p2) }
+                results.getOrPut(p1, { mutableListOf() })
+                    .addAll(matchResults)
+                results.getOrPut(p2, { mutableListOf() })
+                    .addAll(matchResults.map { GameResult(it.p2Score, it.p1Score) })
             }
         }
     }
+
+    fun printWinners(num: Int) {
+        println("Top $num winners:")
+        results.map { Pair(it.key, calculateScore(it.value)) }
+            .sortedByDescending { it.second.first }
+            .take(num)
+            .forEach { println("${it.first.description()}: ${it.second}") }
+    }
+}
+
+// (Wins, draws, losses)
+fun calculateScore(results: List<GameResult>): Triple<Int, Int, Int> {
+    return Triple(
+        results.count { it.p1Score > it.p2Score },
+        results.count { it.p1Score == it.p2Score },
+        results.count { it.p1Score < it.p2Score },
+    )
 }
 
 data class GameResult(val p1Score: Int, val p2Score: Int)
 
-fun runGame(p1: Bot, p2: Bot): GameResult {
+private fun runGame(p1: Bot, p2: Bot): GameResult {
     val game = initGame()
 
     fun getAction(game: Game): Action {
@@ -32,8 +52,10 @@ fun runGame(p1: Bot, p2: Bot): GameResult {
     while (!game.isOver()) {
         var action = getAction(game)
         while (!game.isValid(action)) {
-            println("Warning: bot tried to do invalid action: $action\n" +
-                    "Market: ${game.market}, hand: ${game.curPlayer().hand}, ${game.curPlayer().herd} camels")
+            println(
+                "Warning: bot tried to do invalid action: $action\n" +
+                        "Market: ${game.market}, hand: ${game.curPlayer().hand}, ${game.curPlayer().herd} camels"
+            )
             action = getAction(game)
         }
         game.execute(action)
@@ -100,3 +122,4 @@ fun newDeck(): Deque<Card> {
         }.shuffled()
     )
 }
+
