@@ -1,4 +1,5 @@
 import java.util.*
+import kotlin.math.min
 
 interface Bot {
     fun getAction(view: PlayerGameView, validChecker: (a: Action) -> Boolean): Action
@@ -29,4 +30,73 @@ data class PlayerGameView(
             .map { Pair(it.key, ArrayDeque(ArrayList(it.value))) }
             .toMap()
     )
+}
+
+fun allValidActions(hand: List<Card>, herd: Int, market: List<Card>): Sequence<Action> {
+    return sequence {
+        if (market.any { it == Card.CAMEL }) {
+            yield(Action.takeCamels())
+        }
+
+        if (hand.size < 7) {
+            market.filter { it != Card.CAMEL }
+                .forEach { yield(Action.take(it)) }
+        }
+
+        validSales(hand).forEach { yield(Action.sell(it)) }
+        validSwaps(hand, herd, market).forEach { yield(Action.swap(it.first, it.second)) }
+    }
+}
+
+fun validSales(hand: List<Card>): Sequence<List<Card>> {
+    return sequence {
+        hand.distinct()
+            .flatMap { cardType ->
+                (1..hand.count { it == cardType }).map { List(it) { cardType } }
+            }
+            .forEach { yield(it) }
+    }
+}
+
+fun validSwaps(hand: List<Card>, herd: Int, market: List<Card>): Sequence<Pair<List<Card>, List<Card>>> {
+    val marketCombos = goodsCombinations(market)
+        .filter { it.size > 1 }
+        .groupBy { it.size }
+
+    val maxToTake = market.count { it != Card.CAMEL }
+    val handCombos = goodsCombinations(hand)
+        .flatMap { handCards ->
+            run {
+                val maxCamels = min(min(herd, maxToTake - handCards.size), MAX_HAND_SIZE - hand.size)
+                val camels = (0..maxCamels).map { List(it) { Card.CAMEL } }
+                camels.map { it + handCards }
+            }
+        }
+        .filter { it.size > 1 }
+
+    return sequence {
+        for (toPut in handCombos) {
+            for (toTake in marketCombos[toPut.size] ?: emptyList()) {
+                if (toPut.distinct().all { handCard ->
+                        toTake.none { handCard == it }
+                    }) {
+                    yield(toPut to toTake)
+                }
+            }
+        }
+    }
+}
+
+fun goodsCombinations(cards: List<Card>): List<List<Card>> {
+    if (cards.isEmpty()) {
+        return listOf(emptyList())
+    }
+
+    val combos = mutableListOf<List<Card>>()
+    val restCombos = goodsCombinations(cards.subList(1, cards.size))
+    combos.addAll(restCombos)
+    if (cards[0] != Card.CAMEL) {
+        combos.addAll(restCombos.map { listOf(cards[0]) + it })
+    }
+    return combos.distinct()
 }
