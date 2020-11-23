@@ -16,10 +16,6 @@ open class AlgoBot(private vararg val steps: (v: PlayerGameView) -> Action?) : B
             .firstOrNull { validChecker.invoke(it) } ?: generateSequence { somethingRandom(view) }
             .first { validChecker.invoke(it) }
     }
-
-    override fun description(): String {
-        return javaClass.toString()
-    }
 }
 
 fun somethingRandom(view: PlayerGameView): Action {
@@ -85,19 +81,6 @@ fun takeSingleIfAtLeast(view: PlayerGameView, min: Int): Action? {
     } else {
         null
     }
-}
-
-fun marketCardValue(type: Card, view: PlayerGameView): Float {
-    val stack = view.goodsTokens[type]!!
-    val num = view.hand.count { it == type } + 1
-    val goodsValue = stack.take(min(num, stack.size)).sum()
-    val totalValue = when (num) {
-        3 -> goodsValue + 2
-        4 -> goodsValue + 5
-        5 -> goodsValue + 9
-        else -> goodsValue
-    }
-    return totalValue.toFloat() / num
 }
 
 fun takeCamelsIfAtLeast(market: List<Card>, min: Int): Action? {

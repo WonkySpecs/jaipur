@@ -2,13 +2,9 @@ import bots.*
 import java.util.*
 
 fun main() {
-    // val tournament = Tournament(listOf(RandomBot(), BigSpender(), CamelLover(), BasicBot()))
-    val bots = (1..7)
-        .flatMap { sellThresh -> (3..6).map { takeThresh -> Pair(sellThresh, takeThresh) } }
-        .map { BasicBot(it.first, it.second) }
-    val bbTournament = Tournament(bots, 100)
-    bbTournament.run()
-    bbTournament.printWinners(10)
+    val bots = ActionType.values()
+        .map { Analyzer(EvaluatorBot(EvaluatorConfig.prefers(it))) }
+    Tournament.against(bots, BasicBot(3, 4))
 }
 
 enum class Card {
@@ -122,7 +118,13 @@ data class Game(
         val tokensForGood = goodsTokens[type] ?: error("Card type '$type' not in goodsTokens")
         var num = cards.size
         when (num) {
-            3, 4, 5 -> curPlayer().score += setTokens[num]?.pop()!! // Assume set bonus stacks don't run out
+            3, 4, 5 -> {
+                val bonusStack = setTokens[num]!!
+                if (bonusStack.isNotEmpty()) {
+                    curPlayer().score += bonusStack.pop()
+                }
+            }
+            else -> {}
         }
 
         while (num > 0 && tokensForGood.isNotEmpty()) {

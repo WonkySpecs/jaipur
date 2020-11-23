@@ -1,3 +1,4 @@
+import bots.RandomBot
 import java.util.*
 
 class Tournament(private val participants: List<Bot>, private val gamesPerMatch: Int) {
@@ -18,12 +19,43 @@ class Tournament(private val participants: List<Bot>, private val gamesPerMatch:
         }
     }
 
-    fun printWinners(num: Int) {
-        println("Top $num winners:")
+    fun printWinners() = printWinners(null)
+    fun printWinners(num: Int?) {
+        println("Best in show:")
         results.map { Pair(it.key, calculateScore(it.value)) }
             .sortedByDescending { it.second.first }
-            .take(num)
+            .take(num ?: participants.size)
             .forEach { println("${it.first.description()}: ${it.second}") }
+    }
+
+    companion object {
+        fun againstRandom(bots: List<Bot>, matches: Int = 100, withAnalysis: Boolean = true) {
+            against(bots, RandomBot(), matches, withAnalysis)
+        }
+
+        fun against(bots: List<Bot>, opponent: Bot, matches: Int = 100, withAnalysis: Boolean = true) {
+            bots.map {
+                if (withAnalysis) {
+                    Analyzer(it)
+                } else {
+                    it
+                }
+            }.forEach {
+                run(listOf(it, opponent), matches)
+            }
+        }
+
+        fun run(bots: List<Bot>, matches: Int = 100) {
+            val t = Tournament(bots, matches)
+            t.run()
+            t.printWinners()
+            t.participants
+                .filterIsInstance<Analyzer>()
+                .forEach {
+                    println(it.description())
+                    println(it.analysis())
+                }
+        }
     }
 }
 

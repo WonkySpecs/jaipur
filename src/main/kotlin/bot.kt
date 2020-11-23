@@ -3,7 +3,7 @@ import kotlin.math.min
 
 interface Bot {
     fun getAction(view: PlayerGameView, validChecker: (a: Action) -> Boolean): Action
-    fun description(): String
+    fun description(): String = javaClass.toString()
 }
 
 data class PlayerGameView(
@@ -12,7 +12,7 @@ data class PlayerGameView(
     val opponentHand: MutableList<Card?>,
     var opponentHerd: Int,
     var market: MutableList<Card>,
-    val goodsTokens: Map<Card, Deque<Int>>
+    val goodsTokens: Map<Card, Deque<Int>>,
 ) {
     constructor(
         hand: List<Card>,
@@ -52,7 +52,13 @@ fun validSales(hand: List<Card>): Sequence<List<Card>> {
     return sequence {
         hand.distinct()
             .flatMap { cardType ->
-                (1..hand.count { it == cardType }).map { List(it) { cardType } }
+                run {
+                    val minForSale = when (cardType) {
+                        Card.RUBY, Card.GOLD, Card.SILVER -> 2
+                        else -> 1
+                    }
+                    (minForSale..hand.count { it == cardType }).map { List(it) { cardType } }
+                }
             }
             .forEach { yield(it) }
     }
@@ -99,4 +105,23 @@ fun goodsCombinations(cards: List<Card>): List<List<Card>> {
         combos.addAll(restCombos.map { listOf(cards[0]) + it })
     }
     return combos.distinct()
+}
+
+class Analyzer(private val inner: Bot) : Bot {
+    private val actionsTaken = mutableListOf<Action>()
+    override fun getAction(view: PlayerGameView, validChecker: (a: Action) -> Boolean): Action {
+        val action = inner.getAction(view, validChecker)
+        actionsTaken.add(action)
+        return action
+    }
+
+    fun analysis(): String {
+        return actionsTaken.groupBy { it.type }
+            .entries.sortedByDescending { it.value.size }
+            .joinToString("\n") { "${it.key}: ${it.value.size}" }
+    }
+
+    override fun description(): String {
+        return inner.description()
+    }
 }
